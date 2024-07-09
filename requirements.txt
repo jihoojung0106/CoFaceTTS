@@ -1,5 +1,5 @@
-torch
-torchaudio
+# torch
+# torchaudio
 pytorch-lightning
 librosa
 scipy

@@ -5,9 +5,11 @@ import pytorch_lightning as pl
 
 import os
 import copy
-
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 from config import ex
 from model.face_tts import FaceTTS
+from model.myface_tts import MyFaceTTS
 from data import _datamodules
 
 import numpy as np
@@ -20,23 +22,35 @@ import cv2
 
 from tqdm import tqdm
 
+def save_image(img, name):
+    from PIL import Image
+    
+    array = img
+    # (3, 224, 224) -> (224, 224, 3)
+    array = array.transpose(1, 2, 0)
+    image = Image.fromarray(array)
+    image.save(f'/home/jungji/facetts/img/{name}.png')
+    
 
 @ex.automain
 def main(_config):
 
     _config = copy.deepcopy(_config)
+    # _config["resume_from"]="facetts_lrs3.pt"epoch=5-step=750-last.ckpt
+    # _config["resume_from"]="/mnt/bear2/users/jungji/facetts/logs/1/epoch=5-step=750-last.ckpt"
     pl.seed_everything(_config["seed"])
 
     print("######## Initializing TTS model")
-    model = FaceTTS(_config).cuda()
+    model = MyFaceTTS(_config,teacher=True).cuda()
 
     if _config['use_custom']:      
         print(f"######## Load {_config['test_faceimg']}")
         # use custom face image to synthesize the speech
         spk = cv2.imread(os.path.join(f"{_config['test_faceimg']}"))
         spk = cv2.resize(spk, (224, 224))
-        spk = np.transpose(spk, (2, 0, 1))
-        spk = torch.FloatTensor(spk).unsqueeze(0).to(model.device)
+        spk = np.transpose(spk, (2, 0, 1)) #(3,224,224)짜리 int어레이
+        # save_image(spk, "test_faceimg")
+        spk = torch.FloatTensor(spk).unsqueeze(0).to(model.device) #(1,3,224,224)짜리 int어레이
     else:
         # use LRS3 image 
         print(f"######## Load {_config['dataset']}")

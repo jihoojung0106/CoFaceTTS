@@ -3,7 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import math
-
+import copy
+import numpy as np
+from einops import rearrange
 from model.baseblock import (
     ResnetBlock,
     Residual,
@@ -177,6 +179,7 @@ class Diffusion(pl.LightningModule):
             pe_scale=pe_scale,
             n_feats=self.n_feats,
         )
+        self.config["perceptual_loss"]=True
 
     def get_noise(self, t, beta_init, beta_term, cumulative=False):
         if cumulative:
@@ -260,3 +263,5 @@ class Diffusion(pl.LightningModule):
         )
         t = torch.clamp(t, offset, 1.0 - offset)
         return self.loss_t(x0, mask, mu, t, spk)
+    
+

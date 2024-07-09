@@ -2,8 +2,15 @@
 
 import numpy as np
 import torch
-from .model.monotonic_align.core import maximum_path_c
+# from .model.monotonic_align.core import maximum_path_c
 
+import sys
+import os
+
+# Determine the project root directory and add it to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+sys.path.append(project_root)
+from facetts.model.monotonic_align.model.monotonic_align.core import maximum_path_c
 
 def maximum_path(value, mask):  
     """ Cython optimised version.

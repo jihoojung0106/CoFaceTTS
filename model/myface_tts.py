@@ -25,11 +25,11 @@ from utils import scheduler
 import os
 
 
-class FaceTTS(pl.LightningModule):
-    def __init__(self, _config):
+class MyFaceTTS(pl.LightningModule):
+    def __init__(self, _config,teacher=False):
         super().__init__()
         self.save_hyperparameters()
-
+        self.teacher=teacher
         self.add_blank = _config["add_blank"]
         self.n_vocab = len(symbols) + 1 if self.add_blank else len(symbols)
         self.vid_emb_dim = _config["vid_emb_dim"]
@@ -63,17 +63,6 @@ class FaceTTS(pl.LightningModule):
             self.n_spks,
         )
 
-        self.decoder = Diffusion(
-            self.n_feats,
-            self.dec_dim,
-            self.n_spks,
-            self.vid_emb_dim,
-            self.beta_min,
-            self.beta_max,
-            self.pe_scale,
-            config=_config,
-        )
-
         self.syncnet = SyncNet(_config)
         self.spk_fc = nn.Linear(self.vid_emb_dim, self.vid_emb_dim)
         # self.syncnet.eval()
@@ -82,7 +71,17 @@ class FaceTTS(pl.LightningModule):
             p.requires_grad = False
 
         self.l1loss = nn.L1Loss()
-        
+        self.decoder = ComoDiffusion(
+            self.n_feats,
+            self.dec_dim,
+            self.n_spks,
+            self.vid_emb_dim,
+            self.beta_min,
+            self.beta_max,
+            self.pe_scale,
+            config=_config,
+            teacher=self.teacher
+        )
     def relocate_input(self, x: list):
         for i in range(len(x)):
             if isinstance(x[i], torch.Tensor) and x[i].device != self.device:
@@ -112,7 +111,7 @@ class FaceTTS(pl.LightningModule):
                 spk = torch.mean(spk, 2)
             elif self.config["spk_emb"] == "face":
                 spk = self.syncnet.forward_vid(spk).squeeze(-1).detach()
-
+        
         mu_x, logw, x_mask = self.encoder(x, x_lengths, spk)
 
         w = torch.exp(logw) * x_mask
@@ -131,11 +130,12 @@ class FaceTTS(pl.LightningModule):
 
         z = mu_y + torch.randn_like(mu_y, device=mu_y.device) / temperature
         
-    
-        decoder_outputs = self.decoder(z, y_mask, mu_y, n_timesteps, stoc, spk)
-        decoder_outputs = [
-            decoder_output[:, :, :y_max_length] for decoder_output in decoder_outputs
-        ]
+        #self.decoder(mu_y, y_mask, mu_y, t_steps =n_timesteps,  infer=True)
+        decoder_outputs = self.decoder(mu_y, y_mask, mu_y,  spk,n_timesteps, infer=True)
+        # decoder_outputs = [
+        #     decoder_output[:, :, :y_max_length] for decoder_output in decoder_outputs
+        # ]
+        decoder_outputs = decoder_outputs[:, :, :y_max_length]
 
         return encoder_outputs, decoder_outputs, attn[:, :, :y_max_length]
 
@@ -146,14 +146,14 @@ class FaceTTS(pl.LightningModule):
         x, x_lengths, y, y_lengths = self.relocate_input([x, x_lengths, y, y_lengths])
 
         spk_img = self.syncnet.forward_vid(spk) #spk:(8,3,224,224),spk_img:(8,512,1)
-        spk_aud = self.syncnet.forward_aud(y.unsqueeze(1)) #spk_aud:(8,512,152),y:(8,128,608)
-        spk_aud = torch.mean(spk_aud, 2, keepdim=True) #spk_aud:(8,512,1)
+        # spk_aud = self.syncnet.forward_aud(y.unsqueeze(1)) #spk_aud:(8,512,152),y:(8,128,608)
+        # spk_aud = torch.mean(spk_aud, 2, keepdim=True) #spk_aud:(8,512,1)
 
-        if self.config["spk_emb"] == "speech":
-            spk = spk_aud.squeeze(-1)
-        elif self.config["spk_emb"] == "face":
+        
+        if self.config["spk_emb"] == "face":
             spk = spk_img.squeeze(-1) #(8,512)
-
+        # elif self.config["spk_emb"] == "speech":
+        #     spk = spk_aud.squeeze(-1)
         mu_x, logw, x_mask = self.encoder(x, x_lengths, spk) #mu_x:(8,128,195),logw:(8,1,195),x_mask:(8,1,195)
 
         y_max_length = y.shape[-1]
@@ -219,7 +219,8 @@ class FaceTTS(pl.LightningModule):
 
 
         # Compute diffusion loss, diff_loss : (1), xt:(8,128,128), xt_hat:(8,128,128)
-        diff_loss, xt, xt_hat = self.decoder.compute_loss(y, y_mask, mu_y, spk)
+        # diff_loss, xt, xt_hat = self.decoder.compute_loss(y, y_mask, mu_y, spk)
+        diff_loss, xt_hat = self.decoder(y, y_mask, mu_y, spk)
 
         # Compute speaker loss
         spk_loss = 0.0
@@ -318,5 +319,4 @@ class FaceTTS(pl.LightningModule):
 
     def configure_optimizers(self):
         return scheduler.set_scheduler(self)
-    
-
+ 

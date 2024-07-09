@@ -63,7 +63,7 @@ def dataProcessing(videoroot, audioroot=None, listname='pretrain.list'):
 def main():
   parser = argparse.ArgumentParser(description='dataProcessing')
 
-  parser.add_argument('--vid_path', type=str, default='data/lrs3/mp4', help='data path for lrs3 dataset')
+  parser.add_argument('--vid_path', type=str, default='data/lrs3/mp4', help='data path for lrs3 dataset')#lynx4/datasets/LRS3_lip2speech/
   parser.add_argument('--aud_path', type=str, default='data/lrs3/wav', help='data path for lrs3 audio dataset')
   parser.add_argument('--list_path', type=str, help='list path for lrs3')
 

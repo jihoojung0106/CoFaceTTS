@@ -39,7 +39,7 @@ class LRS3DataModule(LightningDataModule):
 
             self.setup_flag = True
 
-    def load_dataloader(self, dataset, shuffle=True, drop_last=False):
+    def load_dataloader(self, dataset, shuffle=True, drop_last=True):
         batch_collate = TextMelVideoBatchCollate()
 
         loader = DataLoader(
@@ -55,13 +55,13 @@ class LRS3DataModule(LightningDataModule):
         return loader
 
     def train_dataloader(self):
-        loader = self.load_dataloader(self.train_dataset, True, False)
+        loader = self.load_dataloader(self.train_dataset, True, True)
         return loader
 
     def val_dataloader(self):
-        loader = self.load_dataloader(self.val_dataset, False, False)
+        loader = self.load_dataloader(self.val_dataset, False, True)
         return loader
 
     def test_dataloader(self):
-        loader = self.load_dataloader(self.test_dataset, False, False)
+        loader = self.load_dataloader(self.test_dataset, False, True)
         return loader

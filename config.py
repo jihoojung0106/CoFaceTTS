@@ -15,7 +15,7 @@ def config():
     lrs3_train = os.getenv("lrs3_train", "datalist/lrs3_train_long.list")
     lrs3_val = os.getenv("lrs3_val", "datalist/lrs3_val_long.list")
     lrs3_test = os.getenv("lrs3_test", "datalist/lrs3_test_long.list")
-    lrs3_path = os.getenv("lrs3_path", "data/lrs3")
+    lrs3_path = os.getenv("lrs3_path", "/mnt/lynx4/datasets/LRS3_audio_video")
     cmudict_path = os.getenv("cmudict_path", "utils/cmu_dictionary")
 
     # Data Configs
@@ -34,7 +34,7 @@ def config():
 
 
     # Experiment Configs
-    batch_size = int(os.getenv("batch_size", 256))
+    batch_size = int(os.getenv("batch_size", 16))
     add_blank = int(os.getenv("add_blank", 1))  # True: 1 / False: 0
     snet_emb = int(os.getenv("snet_emb", 1))  # True: 1 / False: 0
     n_spks = int(os.getenv("n_spks", 2007))  # libritts:247, lrs3: 2007
@@ -84,7 +84,7 @@ def config():
     image_data_root = os.getenv("image_data_root", "jpg")
     audio_data_root = os.getenv("audio_data_root", "wav")
 
-    log_dir = os.getenv("CHECKPOINTS", "./logs")
+    log_dir = os.getenv("CHECKPOINTS", "/mnt/bear2/users/jungji/facetts/logs")
     log_every_n_steps = int(os.getenv("log_every_n_steps", 1000))
 
     num_gpus = int(os.getenv("num_gpus", 1))
@@ -92,7 +92,7 @@ def config():
     num_nodes = int(os.getenv("num_nodes", 1))
     num_workers = int(os.getenv("num_workers", 2))
     prefetch_factor = int(os.getenv("prefetch_factor", 2))
-
+    
     # Inference Configs
     test_txt = os.getenv("test_txt", "test/text.txt")
     use_custom = int(os.getenv("use_custom", 1))
@@ -104,6 +104,6 @@ def config():
     syncnet_initw = float(os.getenv("syncnet_initw", 10.0))
     syncnet_initb = float(os.getenv("syncnet_initb", -5.0))
 
-    resume_from = os.getenv("resume_from", "./ckpts/facetts_lrs3.pt")
+    resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts/logs/1/epoch=5-step=750-last.ckpt")
     val_check_interval = float(os.getenv("val_check_interval", 1.0))
     test_only = int(os.getenv("test_only", 0))

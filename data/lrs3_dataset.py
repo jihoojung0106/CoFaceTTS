@@ -4,12 +4,21 @@ import os
 import random
 from model.utils import fix_len_compatibility
 from utils.tts_util import intersperse, parse_filelist
-from text import cmudict
+
 from utils.mel_spectrogram import mel_spectrogram
 import cv2
 import numpy as np
+from text import text_to_sequence, cmudict
+from text.symbols import symbols
 
-
+def save_image(img, name):
+    from PIL import Image
+    array = img.squeeze(axis=1)
+    # (3, 224, 224) -> (224, 224, 3)
+    array = array.transpose(1, 2, 0)
+    image = Image.fromarray(array)
+    image.save(f'/home/jungji/facetts/img/{name}.png')
+    
 class LRS3Dataset(torch.utils.data.Dataset):
     def __init__(self, split: str = "", config=None):
         assert split in ["train", "val", "test"]
@@ -22,16 +31,19 @@ class LRS3Dataset(torch.utils.data.Dataset):
 
         if self.split == "train":
             self.filelist = self.config["lrs3_train"]
-            self.video_dir = os.path.join(self.config["lrs3_path"], "trainval")
+            self.video_dir = os.path.join(self.config["lrs3_path"], "mp4/trainval")
             self.audio_dir = os.path.join(self.config["lrs3_path"], "wav/trainval")
+            self.txt_dir = os.path.join(self.config["lrs3_path"], "trainval")
         elif self.split == "val":
             self.filelist = self.config["lrs3_val"]
-            self.video_dir = os.path.join(self.config["lrs3_path"], "trainval")
+            self.video_dir = os.path.join(self.config["lrs3_path"], "mp4/trainval")
             self.audio_dir = os.path.join(self.config["lrs3_path"], "wav/trainval")
+            self.txt_dir = os.path.join(self.config["lrs3_path"], "trainval")
         elif self.split == "test":
             self.filelist = self.config["lrs3_test"]
-            self.video_dir = os.path.join(self.config["lrs3_path"], "test")
+            self.video_dir = os.path.join(self.config["lrs3_path"], "mp4/test")
             self.audio_dir = os.path.join(self.config["lrs3_path"], "wav/test")
+            self.txt_dir = os.path.join(self.config["lrs3_path"], "trainval")
 
         # Load datalist
         with open(self.filelist) as listfile:
@@ -53,7 +65,7 @@ class LRS3Dataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         name = self.data_list[index].split("\n")[0]
         vidname = name + ".mp4"
-        textpath = name + ".txt"
+        textpath=os.path.join(self.txt_dir, name + ".txt")
         aud, sr = torchaudio.load(os.path.join(self.audio_dir, name + ".wav"))
         
         assert (sr == self.config["sample_rate"]), "sampling rate should be 16k."
@@ -86,15 +98,16 @@ class LRS3Dataset(torch.utils.data.Dataset):
         img = self.load_random_frame(self.video_dir, f"{name}.mp4", 1)
         txt = self.loadtext(text, self.cmudict, self.config["add_blank"])
         spk = self.spk_list[name.split("/")[0]]
-
+        # save_image(img,"name")
+        img=torch.FloatTensor(img).squeeze(1)
         return {
-            "spk_id": torch.LongTensor([int(spk)]),
-            "spk": img,
-            "y": aud.squeeze(),
-            "x": txt,
-            "name": name,
+            "spk_id": torch.LongTensor([int(spk)]), #tensor([11])
+            "spk": img, #(3,224,224)
+            "y": aud.squeeze(), #(128,601)
+            "x": txt, #(149)
+            "name": name, #폴더 디렉토리
         }
-
+    
     def loadtext(self, text, cmudict, add_blank=True):
         text_norm = text_to_sequence(text, dictionary=cmudict)
         if add_blank:
@@ -143,16 +156,18 @@ class TextMelVideoBatchCollate(object):
         spk = []
 
         for i, item in enumerate(batch):
-            y_, x_, spk_ = item["y"], item["x"], item["spk"]
+            y_, x_, spk_ = item["y"], item["x"], item["spk"] #(128,601),149,(3,1,224,224)
             y_lengths.append(y_.shape[-1])
             x_lengths.append(x_.shape[-1])
             y[i, :, : y_.shape[-1]] = y_
             x[i, : x_.shape[-1]] = x_
+            
             spk.append(spk_)
 
         y_lengths = torch.LongTensor(y_lengths)
         x_lengths = torch.LongTensor(x_lengths)
-        spk = torch.cat(spk, dim=0)
+        # spk = torch.cat(spk, dim=0)
+        spk=torch.stack(spk)
         return {
             "x": x,
             "x_len": x_lengths,
