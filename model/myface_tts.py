@@ -314,7 +314,7 @@ class MyFaceTTS(pl.LightningModule):
         self.log("val/diffusion_loss", diff_loss)
         self.log("val/spk_loss", spk_loss)
         self.log("val/total_loss", loss)
-
+        print("in validation : val/total_loss", loss)
         return loss
 
     def configure_optimizers(self):

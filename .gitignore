@@ -7,3 +7,4 @@ model/monotonic_align/core.c
 .vscode/
 
 *.pt
+*.wav

@@ -31,7 +31,7 @@ def main(_config):
         mode="min",
         save_last=True,
         filename='{epoch}-{step}-last',
-        every_n_train_steps=50,
+        every_n_epochs=1,
         auto_insert_metric_name=True,
     )
 
@@ -43,7 +43,7 @@ def main(_config):
     model_summary_callback = pl.callbacks.ModelSummary(max_depth=2)
 
     callbacks = [checkpoint_callback_epoch, lr_callback, model_summary_callback]
-    gpus=[0, 1]
+    gpus=[1,2,3]
     num_gpus = len(gpus)
 
     grad_steps = _config["batch_size"] // (
@@ -58,8 +58,8 @@ def main(_config):
         max_steps=max_steps,
         callbacks=callbacks,
         accumulate_grad_batches=2,
-        log_every_n_steps=10,
-        flush_logs_every_n_steps=10,
+        log_every_n_steps=50,
+        flush_logs_every_n_steps=50,
         weights_summary="top",
         logger=logger,
         val_check_interval=_config["val_check_interval"],

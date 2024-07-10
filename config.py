@@ -96,7 +96,7 @@ def config():
     # Inference Configs
     test_txt = os.getenv("test_txt", "test/text.txt")
     use_custom = int(os.getenv("use_custom", 1))
-    test_faceimg = os.getenv("test_faceimg", "test/face2.png")
+    test_faceimg = os.getenv("test_faceimg", "test/face.png")
     timesteps = int(os.getenv("timesteps", 10))
     output_dir = os.getenv("output_dir", "test")
 
@@ -104,6 +104,6 @@ def config():
     syncnet_initw = float(os.getenv("syncnet_initw", 10.0))
     syncnet_initb = float(os.getenv("syncnet_initb", -5.0))
 
-    resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts/logs/1/epoch=5-step=750-last.ckpt")
+    resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts/logs/6/epoch=369-step=59092-last.ckpt")
     val_check_interval = float(os.getenv("val_check_interval", 1.0))
     test_only = int(os.getenv("test_only", 0))
