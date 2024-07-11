@@ -82,7 +82,42 @@ class FaceTTS(pl.LightningModule):
             p.requires_grad = False
 
         self.l1loss = nn.L1Loss()
+        self.load_pretrained_encoder()
+    def load_pretrained_encoder(self):
+        # Load the pretrained model
+        pretrained_model = torch.load('facetts_lrs3.pt')
         
+        # Load only the encoder part of the pretrained model into the current encoder
+        # initial_encoder_weights = {k: v.clone() for k, v in self.encoder.state_dict().items()}
+        initial_encoder_weights = {k: v.clone() for k, v in self.encoder.state_dict().items()}
+        
+        encoder_state_dict = {k[8:]: v for k, v in pretrained_model['state_dict'].items() if 'encoder' in k}
+        self.encoder.load_state_dict(encoder_state_dict, strict=False)
+        # Freeze encoder parameters if required
+        initial_syncnet_weights = {k: v.clone() for k, v in self.syncnet.state_dict().items()}
+        
+        syncnet_state_dict = {
+            k.replace('syncnet.', ''): v 
+            for k, v in pretrained_model['state_dict'].items() 
+            if 'syncnet' in k and ('netcnnimg' in k or 'netfcimg' in k)
+        }
+        self.syncnet.load_state_dict(syncnet_state_dict, strict=False)
+        
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        for param in self.syncnet.netcnnimg.parameters():
+            param.requires_grad = False
+        for param in self.syncnet.netfcimg.parameters():
+            param.requires_grad = False
+        # for param in self.syncnet.parameters():
+        #     print(param)
+            
+        for name, param in self.encoder.named_parameters():
+            if torch.equal(initial_encoder_weights[name], param):
+                print(f"Encoder Layer: {name} remains unchanged.")
+        for name, param in self.syncnet.named_parameters():
+            if torch.equal(initial_syncnet_weights[name], param):
+                print(f"syncnet Layer: {name} remains unchanged.")
     def relocate_input(self, x: list):
         for i in range(len(x)):
             if isinstance(x[i], torch.Tensor) and x[i].device != self.device:

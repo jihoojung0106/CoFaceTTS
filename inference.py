@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-
+import shutil
 import time
 import copy
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 from config import ex
 from model.face_tts import FaceTTS
 from model.myface_tts import MyFaceTTS
@@ -21,6 +21,12 @@ from utils.tts_util import intersperse
 import cv2
 
 from tqdm import tqdm
+def create_clean_directory(dir_path):
+    if os.path.exists(dir_path):
+        print(f"Directory {dir_path} already exists. Removing it.")
+        shutil.rmtree(dir_path)
+    os.makedirs(dir_path)
+    print(f"Directory {dir_path} created.")
 
 def save_image(img, name):
     from PIL import Image
@@ -50,15 +56,24 @@ def save_mel(mel_spectrogram,name):
     plt.close()
 @ex.automain
 def main(_config):
-
+    
     _config = copy.deepcopy(_config)
     pl.seed_everything(_config["seed"])
-
+    freeze_encoder=True
     print("######## Initializing TTS model")
-    model = MyFaceTTS(_config,teacher=True).cuda()
-    _config["resume_from"]="/mnt/bear2/users/jungji/facetts/logs/6/last.ckpt"
+         
+    model = MyFaceTTS(_config,teacher=True,freeze_encoder=freeze_encoder).cuda()
+    _config["resume_from"]="/mnt/bear2/users/jungji/facetts_freeze/logs/4/epoch=14-step=2205-last.ckpt"
+    model.load_model(_config['resume_from'])
+        
     # model = FaceTTS(_config).cuda()
     # _config['resume_from']="facetts_lrs3.pt"
+    # model.load_state_dict(torch.load(_config['resume_from'],map_location='cuda:0')['state_dict'])
+    
+    if isinstance(model, FaceTTS):
+        create_clean_directory("original")
+    else:
+        create_clean_directory("my")
     for n_timesteps in range(1,11):
         if _config['use_custom']:      
             print(f"######## Load {_config['test_faceimg']}")
@@ -78,8 +93,7 @@ def main(_config):
 
         print(f"######## Load checkpoint from {_config['resume_from']}")
         _config['enc_dropout'] = 0.0
-        model.load_state_dict(torch.load(_config['resume_from'])['state_dict'])
-            
+           
         model.eval()
         model.zero_grad()
 
@@ -116,16 +130,20 @@ def main(_config):
 
                 if isinstance(y_dec, list):
                     if isinstance(model, FaceTTS):
-                        save_mel(y_dec[0],f"original/mel_dec_{n_timesteps}_{elapsed_time:.2f}")
+                        save_mel(y_dec[-1],f"original/mel_dec_{n_timesteps}_{elapsed_time:.2f}")
                 else:
                     if isinstance(model, MyFaceTTS):
                         save_mel(y_dec,f"my/mel_dec_{n_timesteps}_{elapsed_time:.2f}")
                 if isinstance(model, FaceTTS):
-                        save_mel(y_enc[0],f"original/mel_enc_{n_timesteps}_{elapsed_time:.2f}")
+                        save_mel(y_enc,f"original/mel_enc_{n_timesteps}_{elapsed_time:.2f}")
                 elif isinstance(model, MyFaceTTS):
                         save_mel(y_enc,f"my/mel_enc_{n_timesteps}_{elapsed_time:.2f}")
                 audio = (
                     vocoder.forward(y_dec[-1]).cpu().squeeze().clamp(-1, 1).numpy()
+                    * 32768
+                ).astype(np.int16)
+                audio_encoder = (
+                    vocoder.forward(y_enc).cpu().squeeze().clamp(-1, 1).numpy()
                     * 32768
                 ).astype(np.int16)
                 
@@ -135,11 +153,21 @@ def main(_config):
                         _config["sample_rate"],
                         audio,
                     )
+                    write(
+                        f"my/sample_encoder_{i}_{n_timesteps}_{elapsed_time:.2f}.wav",
+                        _config["sample_rate"],
+                        audio_encoder,
+                    )
                 else:
                     write(
                         f"original/sample_{i}_{n_timesteps}_{elapsed_time:.2f}.wav",
                         _config["sample_rate"],
                         audio,
+                    )
+                    write(
+                        f"original/sample_encoder_{i}_{n_timesteps}_{elapsed_time:.2f}.wav",
+                        _config["sample_rate"],
+                        audio_encoder,
                     )
 
         print(f"######## Done inference. Check '{_config['output_dir']}' folder")

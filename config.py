@@ -75,7 +75,7 @@ def config():
     end_lr = float(os.getenv("end_lr", 1e-7))
     weight_decay = float(os.getenv("weight_decay", 0.1))
     decay_power = float(os.getenv("decay_power", 1.0))
-    max_steps = int(os.getenv("max_steps", 100000))
+    max_steps = int(os.getenv("max_steps", 1000000))
 
     save_step = int(os.getenv("save_step", 10000))
     warmup_steps = float(os.getenv("warmup_steps", 0))  # 1000
@@ -84,7 +84,7 @@ def config():
     image_data_root = os.getenv("image_data_root", "jpg")
     audio_data_root = os.getenv("audio_data_root", "wav")
 
-    log_dir = os.getenv("CHECKPOINTS", "/mnt/bear2/users/jungji/facetts/logs")
+    log_dir = os.getenv("CHECKPOINTS", "/mnt/bear2/users/jungji/facetts_freeze/logs")
     log_every_n_steps = int(os.getenv("log_every_n_steps", 1000))
 
     num_gpus = int(os.getenv("num_gpus", 1))
@@ -103,7 +103,7 @@ def config():
     # SyncNet Configs
     syncnet_initw = float(os.getenv("syncnet_initw", 10.0))
     syncnet_initb = float(os.getenv("syncnet_initb", -5.0))
-
-    resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts/logs/6/epoch=369-step=59092-last.ckpt")
+    resume_from = os.getenv("resume_from", "None")
+    # resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts/logs/6/epoch=546-step=85111-last.ckpt")
     val_check_interval = float(os.getenv("val_check_interval", 1.0))
     test_only = int(os.getenv("test_only", 0))

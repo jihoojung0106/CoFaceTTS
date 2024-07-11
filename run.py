@@ -5,6 +5,7 @@ from pytorch_lightning.loggers import TensorBoardLogger  # 추가된 부분
 
 import os
 import copy
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,2,3'
 
 from config import ex
 from model.face_tts import FaceTTS
@@ -19,7 +20,7 @@ def main(_config):
 
     dm = _datamodules["dataset_" + _config["dataset"]](_config)
     
-    local_checkpoint_dir="/mnt/bear2/users/jungji/facetts/logs"
+    local_checkpoint_dir="/mnt/bear2/users/jungji/facetts_freeze/logs"
     os.makedirs(local_checkpoint_dir, exist_ok=True)
     logger = TensorBoardLogger(local_checkpoint_dir, name="my_model")
 
@@ -38,12 +39,12 @@ def main(_config):
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
 
     # model = FaceTTS(_config)
-    model = MyFaceTTS(_config,teacher=True)
-
+    model = MyFaceTTS(_config,teacher=True,freeze_encoder=True)
+    #model = MyFaceTTS(_config,teacher=True)
     model_summary_callback = pl.callbacks.ModelSummary(max_depth=2)
 
     callbacks = [checkpoint_callback_epoch, lr_callback, model_summary_callback]
-    gpus=[1,2,3]
+    gpus=[0,1,2]
     num_gpus = len(gpus)
 
     grad_steps = _config["batch_size"] // (
@@ -66,6 +67,7 @@ def main(_config):
     )
 
     if not _config["test_only"]:
-        trainer.fit(model, datamodule=dm, ckpt_path=_config["resume_from"])
+        trainer.fit(model, datamodule=dm)
+        # trainer.fit(model, datamodule=dm, ckpt_path=_config["resume_from"])
     else:
         trainer.test(model, datamodule=dm, ckpt_path=_config["resume_from"])
