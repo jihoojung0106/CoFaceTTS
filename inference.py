@@ -6,7 +6,7 @@ import shutil
 import time
 import copy
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 from config import ex
 from model.face_tts import FaceTTS
 from model.myface_tts import MyFaceTTS
@@ -63,7 +63,7 @@ def main(_config):
     print("######## Initializing TTS model")
          
     model = MyFaceTTS(_config,teacher=True,freeze_encoder=freeze_encoder).cuda()
-    _config["resume_from"]="/mnt/bear2/users/jungji/facetts_freeze/logs/4/epoch=14-step=2205-last.ckpt"
+    _config["resume_from"]="/mnt/bear2/users/jungji/facetts_freeze/logs/5/epoch=1772-step=260631-last.ckpt"
     model.load_model(_config['resume_from'])
         
     # model = FaceTTS(_config).cuda()

@@ -103,7 +103,7 @@ def config():
     # SyncNet Configs
     syncnet_initw = float(os.getenv("syncnet_initw", 10.0))
     syncnet_initb = float(os.getenv("syncnet_initb", -5.0))
-    resume_from = os.getenv("resume_from", "None")
-    # resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts/logs/6/epoch=546-step=85111-last.ckpt")
+    # resume_from = os.getenv("resume_from", "None")
+    resume_from = os.getenv("resume_from", "/mnt/bear2/users/jungji/facetts_freeze/logs/4/epoch=21-step=3234-last.ckpt")
     val_check_interval = float(os.getenv("val_check_interval", 1.0))
     test_only = int(os.getenv("test_only", 0))

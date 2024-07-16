@@ -67,7 +67,7 @@ def main(_config):
     )
 
     if not _config["test_only"]:
-        trainer.fit(model, datamodule=dm)
-        # trainer.fit(model, datamodule=dm, ckpt_path=_config["resume_from"])
+        #trainer.fit(model, datamodule=dm)
+        trainer.fit(model, datamodule=dm, ckpt_path=_config["resume_from"])
     else:
         trainer.test(model, datamodule=dm, ckpt_path=_config["resume_from"])
